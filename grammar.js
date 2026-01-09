@@ -8,9 +8,9 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
-const HTML = require('tree-sitter-html/grammar');
+import HTML from 'tree-sitter-html/grammar.js';
 
-module.exports = grammar(HTML, {
+export default grammar(HTML, {
   name: 'svelte',
 
   conflicts: $ => [
@@ -50,7 +50,7 @@ module.exports = grammar(HTML, {
 
   rules: {
     _node: ($, original) => choice(
-      original,
+      ...(original ? [original] : []),
 
       $.if_statement,
       $.each_statement,
@@ -306,9 +306,9 @@ module.exports = grammar(HTML, {
 });
 
 /**
- * @param  {string} sym
- * @param  {string} text
- * @return {SeqRule}
+ * @param {string} sym
+ * @param {string} text
+ * @returns {SeqRule}
  */
 function tag(sym, text) {
   return seq(

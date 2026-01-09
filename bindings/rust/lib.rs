@@ -7,7 +7,15 @@
 //! use tree_sitter::Parser;
 //!
 //! let code = r#"
+//! <script>
+//!   let name = 'world';
+//! </script>
 //!
+//! <style>
+//!   h1 { color: purple; }
+//! </style>
+//!
+//! <h1>Hello {name}!</h1>
 //! "#;
 //! let mut parser = tree_sitter::Parser::new();
 //! let language = tree_sitter_svelte_ng::LANGUAGE;
@@ -25,8 +33,8 @@
 
 use tree_sitter_language::LanguageFn;
 
-extern "C" {
-    fn tree_sitter_svelte() -> *const ();
+unsafe extern "C" {
+    unsafe fn tree_sitter_svelte() -> *const ();
 }
 
 /// The tree-sitter [`LanguageFn`] for this grammar.

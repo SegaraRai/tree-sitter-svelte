@@ -3,6 +3,8 @@
 
 #include <wctype.h>
 
+#include "wasm_extra.h"
+
 enum TokenType {
     START_TAG_NAME,
     SCRIPT_START_TAG_NAME,
@@ -320,7 +322,7 @@ static bool scan_raw_text(Scanner *scanner, TSLexer *lexer) {
 
     unsigned delimiter_index = 0;
     while (lexer->lookahead) {
-        if ((char)towupper(lexer->lookahead) == end_delimiter[delimiter_index]) {
+        if (towupper(lexer->lookahead) == (wint_t)end_delimiter[delimiter_index]) {
             delimiter_index++;
             if (delimiter_index == strlen(end_delimiter)) {
                 break;

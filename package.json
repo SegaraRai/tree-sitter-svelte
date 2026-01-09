@@ -1,17 +1,30 @@
 {
   "name": "@tree-sitter-grammars/tree-sitter-svelte",
-  "version": "1.0.2",
+  "version": "2.0.0",
+  "type": "module",
   "description": "Svelte grammar for tree-sitter",
-  "repository": "github:tree-sitter-grammars/tree-sitter-svelte",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tree-sitter-grammars/tree-sitter-svelte.git"
+  },
   "publishConfig": {
     "access": "public"
   },
   "license": "MIT",
   "author": "Amaan Qureshi <amaanq12@gmail.com>",
-  "main": "bindings/node",
-  "types": "bindings/node",
+  "main": "bindings/node/index.js",
+  "types": "bindings/node/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./bindings/node/index.js",
+      "types": "./bindings/node/index.d.ts"
+    },
+    "./wasm": "./tree-sitter-svelte.wasm",
+    "./package.json": "./package.json"
+  },
   "files": [
     "grammar.js",
+    "tree-sitter.json",
     "binding.gyp",
     "prebuilds/**",
     "bindings/node/*",
@@ -26,18 +39,18 @@
     "svelte"
   ],
   "dependencies": {
-    "node-addon-api": "^8.1.0",
-    "node-gyp-build": "^4.8.2",
-    "tree-sitter-html": "^0.23.0"
+    "node-addon-api": "^8.5.0",
+    "node-gyp-build": "^4.8.4",
+    "tree-sitter-html": "^0.23.2"
   },
   "devDependencies": {
-    "eslint": "^9.10.0",
-    "eslint-config-google": "^0.14.0",
+    "eslint": "^9.39.2",
+    "eslint-config-treesitter": "^1.0.2",
     "prebuildify": "^6.0.1",
-    "tree-sitter-cli": "^0.23.0"
+    "tree-sitter-cli": "^0.26.3"
   },
   "peerDependencies": {
-    "tree-sitter": "^0.21.1"
+    "tree-sitter": "^0.21.0 || ^0.25.0"
   },
   "peerDependenciesMeta": {
     "tree_sitter": {
@@ -54,15 +67,8 @@
   "tree-sitter": [
     {
       "scope": "source.svelte",
-      "injection-regex": "svelte",
       "file-types": [
         "svelte"
-      ],
-      "highlights": [
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
       ]
     }
   ]

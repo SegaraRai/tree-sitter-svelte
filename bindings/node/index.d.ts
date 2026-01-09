@@ -18,11 +18,13 @@ type NodeInfo =
       children: ChildNode[];
     });
 
-type Language = {
-  name: string;
-  language: unknown;
-  nodeTypeInfo: NodeInfo[];
-};
+export const language: unknown;
+export const nodeTypeInfo: NodeInfo[] | undefined;
 
-declare const language: Language;
-export = language;
+export function getHighlightsQuery(): string;
+export function getInjectionsQuery(): string;
+export function getLocalsQuery(): string;
+export function getFoldsQuery(): string;
+export function getIndentsQuery(): string;
+
+export default { language, nodeTypeInfo, getHighlightsQuery, getInjectionsQuery, getLocalsQuery, getFoldsQuery, getIndentsQuery };

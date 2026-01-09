@@ -1,13 +1,13 @@
 [package]
 name = "tree-sitter-svelte-ng"
 description = "Svelte grammar for tree-sitter"
-version = "1.0.2"
+version = "2.0.0"
 authors = ["Amaan Qureshi <amaanq12@gmail.com>"]
 license = "MIT"
 keywords = ["incremental", "parsing", "svelte"]
 categories = ["parsing", "text-editors"]
 repository = "https://github.com/tree-sitter-grammars/tree-sitter-svelte"
-edition = "2021"
+edition = "2024"
 autoexamples = false
 
 build = "bindings/rust/build.rs"
@@ -17,10 +17,10 @@ include = ["bindings/rust/*", "grammar.js", "queries/*", "src/*"]
 path = "bindings/rust/lib.rs"
 
 [dependencies]
-tree-sitter-language = "0.1.0"
+tree-sitter-language = "0.1.6"
 
 [build-dependencies]
-cc = "1.1.17"
+cc = "1.2.52"
 
 [dev-dependencies]
-tree-sitter = "0.23"
+tree-sitter = "0.26.3"

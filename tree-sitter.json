@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "svelte",
+      "camelcase": "Svelte",
+      "title": "Svelte",
+      "scope": "source.svelte",
+      "file-types": ["svelte"],
+      "injection-regex": "^svelte$",
+      "class-name": "TreeSitterSvelte"
+    }
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "license": "MIT",
+    "description": "Svelte grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "Amaan Qureshi",
+        "url": "https://github.com/amaanq"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/tree-sitter-grammars/tree-sitter-svelte"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "java": false,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}

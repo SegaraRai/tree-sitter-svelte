@@ -12,15 +12,23 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           cache: npm
-          node-version: ${{vars.NODE_VERSION}}
+          node-version: "24"
+
       - name: Install modules
         run: npm ci --legacy-peer-deps
+
       - name: Run ESLint
         run: npm run lint

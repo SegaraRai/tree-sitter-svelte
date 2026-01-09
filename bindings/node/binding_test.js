@@ -1,9 +1,23 @@
 /// <reference types="node" />
 
-const assert = require("node:assert");
-const { test } = require("node:test");
+import assert from "node:assert";
+import { test } from "node:test";
+import Parser from "tree-sitter";
+import * as Svelte from "./index.js";
 
 test("can load grammar", () => {
-  const parser = new (require("tree-sitter"))();
-  assert.doesNotThrow(() => parser.setLanguage(require(".")));
+  const parser = new Parser();
+  assert.doesNotThrow(() => parser.setLanguage(Svelte.language));
+});
+
+test("can access queries", () => {
+  assert.ok(Svelte.getHighlightsQuery());
+  assert.ok(Svelte.getInjectionsQuery());
+  assert.ok(Svelte.getLocalsQuery());
+  assert.ok(Svelte.getFoldsQuery());
+  assert.ok(Svelte.getIndentsQuery());
+});
+
+test("has node type info", () => {
+  assert.ok(Svelte.nodeTypeInfo !== undefined);
 });
