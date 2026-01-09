@@ -1,0 +1,98 @@
+============================
+Each: index-only comma split
+============================
+{#each items, i}
+  {i}
+{/each}
+------------------------
+
+(document
+  (each_statement
+    (each_start
+      (block_start_tag)
+      (svelte_raw_text)
+      (svelte_raw_text))
+    (expression
+      (svelte_raw_text))
+    (each_end
+      (block_end_tag))))
+
+============================
+Each: comma in array literal
+============================
+{#each [a, b, c] as item}
+  {item}
+{/each}
+------------------------
+
+(document
+  (each_statement
+    (each_start
+      (block_start_tag)
+      (svelte_raw_text)
+      (svelte_raw_text))
+    (expression
+      (svelte_raw_text))
+    (each_end
+      (block_end_tag))))
+
+============================
+Each: nested `as` keyword
+============================
+{#each foo(a as b) as item}
+  {item}
+{/each}
+------------------------
+
+(document
+  (each_statement
+    (each_start
+      (block_start_tag)
+      (svelte_raw_text)
+      (svelte_raw_text))
+    (expression
+      (svelte_raw_text))
+    (each_end
+      (block_end_tag))))
+
+============================
+Each: `as` inside string
+============================
+{#each ["as ", "x"] as item}
+  {item}
+{/each}
+------------------------
+
+(document
+  (each_statement
+    (each_start
+      (block_start_tag)
+      (svelte_raw_text)
+      (svelte_raw_text))
+    (expression
+      (svelte_raw_text))
+    (each_end
+      (block_end_tag))))
+
+============================
+Each: mismatched delimiter recovery
+============================
+{#each foo(] , i}
+{/each}
+<div>after</div>
+------------------------
+
+(document
+  (each_statement
+    (each_start
+      (block_start_tag)
+      (svelte_raw_text)
+      (svelte_raw_text))
+    (each_end
+      (block_end_tag)))
+  (element
+    (start_tag
+      (tag_name))
+    (text)
+    (end_tag
+      (tag_name))))

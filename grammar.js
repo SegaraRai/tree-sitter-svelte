@@ -33,6 +33,7 @@ export default grammar(HTML, {
     $.svelte_raw_text,
     $.svelte_raw_text_each,
     $.svelte_raw_text_snippet_arguments,
+    $.svelte_raw_text_snippet_type_parameters,
     '@',
     '#',
     '/',
@@ -64,6 +65,7 @@ export default grammar(HTML, {
       $.const_tag,
       $.debug_tag,
       $.render_tag,
+      $.attach_tag,
     ),
 
     _single_quoted_attribute_value: $ => repeat1(
@@ -119,6 +121,7 @@ export default grammar(HTML, {
           )),
         ),
         alias($.expression, $.attribute_name),
+        alias($.attach_tag, $.attribute_name),
       ),
     ),
 
@@ -177,12 +180,26 @@ export default grammar(HTML, {
       '{',
       alias($._each_start_tag, $.block_start_tag),
       choice(
-        field('identifier', $.svelte_raw_text),
+        // {#each expression, index} - only index binding (Svelte 5)
+        seq(
+          field('identifier', alias($.svelte_raw_text_each, $.svelte_raw_text)),
+          ',',
+          field('index', $.svelte_raw_text),
+        ),
+        // {#each expression as name} - with item binding
+        // {#each expression as name, index} - with item and index
+        // {#each expression as name (key)} - with key
+        // {#each expression as name, index (key)} - with all
         seq(
           field('identifier', alias($.svelte_raw_text_each, $.svelte_raw_text)),
           'as',
           field('parameter', $.svelte_raw_text),
         ),
+        // {#each expression} - no bindings (can be either raw_text or raw_text_each)
+        field('identifier', choice(
+          $.svelte_raw_text,
+          alias($.svelte_raw_text_each, $.svelte_raw_text),
+        )),
       ),
       '}',
     ),
@@ -250,6 +267,12 @@ export default grammar(HTML, {
       '{',
       alias($._snippet_start_tag, $.block_start_tag),
       alias(/[a-zA-Z$_][a-zA-Z0-9_]*/, $.snippet_name),
+      optional(
+        field(
+          'type_parameters',
+          alias($.svelte_raw_text_snippet_type_parameters, $.snippet_type_parameters),
+        ),
+      ),
       '(',
       optional(
         alias($.svelte_raw_text_snippet_arguments, $.svelte_raw_text),
@@ -293,6 +316,14 @@ export default grammar(HTML, {
     render_tag: $ => seq(
       '{',
       alias($._render_tag, $.expression_tag),
+      $._tag_value,
+      '}',
+    ),
+
+    _attach_tag: _ => tag('@', 'attach'),
+    attach_tag: $ => seq(
+      '{',
+      alias($._attach_tag, $.expression_tag),
       $._tag_value,
       '}',
     ),

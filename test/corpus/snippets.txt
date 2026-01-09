@@ -60,6 +60,26 @@ Snippet (without argument)
      (block_end_tag)))
 )
 
+===========================
+Snippet (with type parameters)
+===========================
+{#snippet generic<T extends string>(val: T)}
+	{val}
+{/snippet}
+------------------------
+(document
+  (snippet_statement
+    (snippet_start
+      (block_start_tag)
+      (snippet_name)
+      (snippet_type_parameters)
+      (svelte_raw_text))
+    (expression
+      (svelte_raw_text))
+    (snippet_end
+      (block_end_tag)))
+)
+
 ============================
 Snippet (with destructuring)
 ============================

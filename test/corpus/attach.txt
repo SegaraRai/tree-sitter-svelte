@@ -1,0 +1,77 @@
+============================
+@attach: basic on element
+============================
+<div {@attach myAttachment}></div>
+------------------------
+
+(document
+  (element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name
+          (expression_tag)
+          (svelte_raw_text))))
+    (end_tag
+      (tag_name))))
+
+============================
+@attach: multiple attachments
+============================
+<div {@attach (node) => {}} {@attach (node) => {}}></div>
+------------------------
+
+(document
+  (element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name
+          (expression_tag)
+          (svelte_raw_text)))
+      (attribute
+        (attribute_name
+          (expression_tag)
+          (svelte_raw_text))))
+    (end_tag
+      (tag_name))))
+
+============================
+@attach: multiline body
+============================
+<canvas
+  {@attach (canvas) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    return () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }}
+></canvas>
+------------------------
+
+(document
+  (element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name
+          (expression_tag)
+          (svelte_raw_text))))
+    (end_tag
+      (tag_name))))
+
+============================
+@attach: on component self-closing
+============================
+<Child {@attach enabled && attachment} />
+------------------------
+
+(document
+  (element
+    (self_closing_tag
+      (tag_name)
+      (attribute
+        (attribute_name
+          (expression_tag)
+          (svelte_raw_text))))))

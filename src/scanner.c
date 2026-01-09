@@ -18,6 +18,7 @@ enum TokenType {
     SVELTE_RAW_TEXT,
     SVELTE_RAW_TEXT_EACH,
     SVELTE_RAW_TEXT_SNIPPET_ARGUMENTS,
+    SVELTE_RAW_TEXT_SNIPPET_TYPE_PARAMETERS,
     AT,
     HASH,
     SLASH,
@@ -395,6 +396,81 @@ static bool scan_svelte_raw_text_snippet(TSLexer *lexer) {
     return false;
 }
 
+// Like `scan_svelte_raw_text`, but designed to operate on the optional type
+// parameter list immediately following a `#snippet` name.
+//
+// Consumes a balanced TypeScript generic parameter list like `<T extends string>`
+// and stops just after the matching `>`.
+static bool scan_svelte_raw_text_snippet_type_parameters(TSLexer *lexer) {
+    while (iswspace(lexer->lookahead)) {
+        skip(lexer);
+    }
+
+    if (lexer->lookahead != '<') {
+        return false;
+    }
+
+    lexer->result_symbol = SVELTE_RAW_TEXT_SNIPPET_TYPE_PARAMETERS;
+
+    uint16_t angle_level = 0;
+    bool advanced_once = false;
+
+    while (!lexer->eof(lexer)) {
+        switch (lexer->lookahead) {
+            case '<':
+                angle_level++;
+                advance(lexer);
+                advanced_once = true;
+                break;
+            case '>':
+                advance(lexer);
+                advanced_once = true;
+                if (angle_level == 0) {
+                    return false;
+                }
+                angle_level--;
+                if (angle_level == 0) {
+                    lexer->mark_end(lexer);
+                    return true;
+                }
+                break;
+            case '/':
+                advance(lexer);
+                advanced_once = true;
+                if (lexer->lookahead == '*') {
+                    scan_javascript_block_comment(lexer);
+                } else if (lexer->lookahead == '/') {
+                    scan_javascript_line_comment(lexer);
+                }
+                break;
+            case '\\':
+                // Escape mode. Advance again.
+                advance(lexer);
+                advanced_once = true;
+                break;
+            case '"':
+            case '\'':
+                // A quoted string is starting. Advance past the end of the
+                // closing delimiter.
+                scan_javascript_quoted_string(lexer, lexer->lookahead);
+                advanced_once = true;
+                break;
+            case '`':
+                // A template string is starting. Advance past the end of the
+                // closing delimiter.
+                scan_javascript_template_string(lexer);
+                advanced_once = true;
+                break;
+            default:
+                advance(lexer);
+                advanced_once = true;
+                break;
+        }
+    }
+
+    return advanced_once && angle_level == 0;
+}
+
 static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
     while (iswspace(lexer->lookahead)) {
         skip(lexer);
@@ -431,7 +507,24 @@ static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
 
     lexer->result_symbol = valid_symbols[SVELTE_RAW_TEXT_EACH] ? SVELTE_RAW_TEXT_EACH : SVELTE_RAW_TEXT;
 
-    uint8_t brace_level = 0;
+    typedef uint8_t DelimKind;
+    enum {
+        DELIM_BRACE = 0,
+        DELIM_BRACKET = 1,
+        DELIM_PAREN = 2,
+    };
+
+    // A small, bounded delimiter stack so we can distinguish (), [], {} and
+    // avoid incorrectly treating mismatched closes as reducing nesting.
+    //
+    // This must not allocate and must remain bounded to avoid stack overflow.
+    // If nesting exceeds this depth, we fall back to a simple overflow counter
+    // and disable `{#each}`-specific early-splitting heuristics.
+    enum { MAX_DELIM_DEPTH = 64 };
+    DelimKind delim_stack[MAX_DELIM_DEPTH];
+    uint8_t delim_sp = 0;
+    uint8_t overflow_depth = 0;
+    bool nesting_uncertain = false;
 
     // We're searching for a balanced `}`, but along the way we have to
     // consider characters that might put us into contexts for which braces
@@ -439,6 +532,9 @@ static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
     // shouldn't count toward brace balancing, nor should a brace inside of a
     // string.
     while (!lexer->eof(lexer)) {
+        const bool depth_is_zero = delim_sp == 0 && overflow_depth == 0;
+        const bool safe_for_splitting = depth_is_zero && !nesting_uncertain;
+
         switch (lexer->lookahead) {
             case '/':
                 advance(lexer);
@@ -449,11 +545,13 @@ static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
                     scan_javascript_line_comment(lexer);
                 }
                 break;
+
             case '\\':
                 // Escape mode. Advance again.
                 advance(lexer);
                 advanced_once = true;
                 break;
+
             case '"':
             case '\'':
                 // A quoted string is starting. Advance past the end of the
@@ -461,39 +559,144 @@ static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
                 scan_javascript_quoted_string(lexer, lexer->lookahead);
                 advanced_once = true;
                 break;
+
             case '`':
                 // A template string is starting. Advance past the end of the
                 // closing delimiter.
                 scan_javascript_template_string(lexer);
                 advanced_once = true;
                 break;
+
             case '}':
-                if (brace_level == 0) {
+                if (depth_is_zero) {
                     lexer->mark_end(lexer);
                     return advanced_once;
                 }
+                if (overflow_depth > 0) {
+                    overflow_depth--;
+                } else if (delim_sp > 0) {
+                    if (delim_stack[delim_sp - 1] == DELIM_BRACE) {
+                        delim_sp--;
+                    } else {
+                        // Mismatched close. Try to repair by searching for a
+                        // matching opener deeper in the stack.
+                        bool found = false;
+                        for (uint8_t i = delim_sp; i > 0; i--) {
+                            if (delim_stack[i - 1] == DELIM_BRACE) {
+                                delim_sp = (uint8_t)(i - 1);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            // No matching opener; drop one level to ensure
+                            // we still make progress toward termination.
+                            delim_sp--;
+                        }
+                        nesting_uncertain = true;
+                    }
+                }
                 advance(lexer);
-                brace_level--;
                 advanced_once = true;
                 break;
 
             case '{':
+            case '[':
+            case '(':
+            {
+                DelimKind open_kind = DELIM_BRACE;
+                if (lexer->lookahead == '[') {
+                    open_kind = DELIM_BRACKET;
+                } else if (lexer->lookahead == '(') {
+                    open_kind = DELIM_PAREN;
+                }
+
+                if (overflow_depth > 0) {
+                    if (overflow_depth < UINT8_MAX) {
+                        overflow_depth++;
+                    }
+                    nesting_uncertain = true;
+                } else if (delim_sp < MAX_DELIM_DEPTH) {
+                    delim_stack[delim_sp++] = open_kind;
+                } else {
+                    overflow_depth = 1;
+                    nesting_uncertain = true;
+                }
+
                 advance(lexer);
-                brace_level++;
+                advanced_once = true;
+                break;
+            }
+
+            case ']':
+            case ')':
+            {
+                if (depth_is_zero) {
+                    // Stray close at top-level; consume it but don't let it
+                    // affect nesting.
+                    advance(lexer);
+                    advanced_once = true;
+                    break;
+                }
+
+                DelimKind close_kind = lexer->lookahead == ']' ? DELIM_BRACKET : DELIM_PAREN;
+                if (overflow_depth > 0) {
+                    overflow_depth--;
+                } else if (delim_sp > 0) {
+                    if (delim_stack[delim_sp - 1] == close_kind) {
+                        delim_sp--;
+                    } else {
+                        // Mismatched close. Try to repair by searching for a
+                        // matching opener deeper in the stack.
+                        bool found = false;
+                        for (uint8_t i = delim_sp; i > 0; i--) {
+                            if (delim_stack[i - 1] == close_kind) {
+                                delim_sp = (uint8_t)(i - 1);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            // No matching opener; drop one level to ensure
+                            // we still make progress toward termination.
+                            delim_sp--;
+                        }
+                        nesting_uncertain = true;
+                    }
+                }
+
+                advance(lexer);
+                advanced_once = true;
+                break;
+            }
+
+            case ',':
+                if (lexer->result_symbol == SVELTE_RAW_TEXT_EACH && safe_for_splitting) {
+                    // Stop before comma for {#each array, index} syntax
+                    lexer->mark_end(lexer);
+                    return advanced_once;
+                }
+                advance(lexer);
                 advanced_once = true;
                 break;
 
             case 'a':
-                if (lexer->result_symbol == SVELTE_RAW_TEXT_EACH) {
+                // For SVELTE_RAW_TEXT_EACH, check if this might be "as " keyword
+                if (lexer->result_symbol == SVELTE_RAW_TEXT_EACH && safe_for_splitting) {
+                    // Save position before 'a' in case this is "as "
                     lexer->mark_end(lexer);
                     advance(lexer);
                     advanced_once = true;
                     if (lexer->lookahead == 's') {
                         advance(lexer);
                         if (iswspace(lexer->lookahead)) {
+                            // Confirmed "as " keyword - return with marked end
                             return advanced_once;
                         }
+                        // Not "as " - we consumed 'as' but it's part of a longer word
+                        // Continue scanning - the next mark_end call will update the position
                     }
+                    // Not "as" - continue scanning
                 } else {
                     advance(lexer);
                     advanced_once = true;
@@ -504,6 +707,12 @@ static bool scan_svelte_raw_text(TSLexer *lexer, const bool *valid_symbols) {
                 advance(lexer);
                 advanced_once = true;
                 break;
+        }
+
+        // If we return to a safe top-level via a repair pop, re-enable
+        // `{#each}` splitting heuristics.
+        if (delim_sp == 0 && overflow_depth == 0) {
+            nesting_uncertain = false;
         }
     }
 
@@ -633,6 +842,10 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
 
     if (valid_symbols[SVELTE_RAW_TEXT_SNIPPET_ARGUMENTS]) {
         return scan_svelte_raw_text_snippet(lexer);
+    }
+
+    if (valid_symbols[SVELTE_RAW_TEXT_SNIPPET_TYPE_PARAMETERS]) {
+        return scan_svelte_raw_text_snippet_type_parameters(lexer);
     }
 
     if (valid_symbols[SVELTE_RAW_TEXT] || valid_symbols[SVELTE_RAW_TEXT_EACH]) {
