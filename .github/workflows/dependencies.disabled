@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           cache: npm
-          node-version: "24"
+          node-version: "22"
 
       - name: Update dependencies
         uses: tree-sitter/parser-update-action@v1.1
