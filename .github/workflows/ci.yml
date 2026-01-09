@@ -30,6 +30,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          cache: npm
+          node-version: "22"
+
+      - name: Install modules
+        run: npm ci --legacy-peer-deps
+
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
 
@@ -43,12 +52,15 @@ jobs:
             documentation/examples/
             sites/svelte.dev/src/
 
+      - name: Run Node test
+        run: npm run test
+
       - name: Run tests
         uses: tree-sitter/parser-test-action@v3
         with:
           abi-version: 14
           test-rust: ${{runner.os == 'Linux'}}
-          test-node: true
+          test-node: false
           test-python: true
           test-go: true
           test-swift: ${{runner.os == 'macOS'}}
