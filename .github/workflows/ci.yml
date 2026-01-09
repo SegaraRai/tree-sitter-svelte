@@ -51,6 +51,7 @@ jobs:
           test-python: true
           test-go: true
           test-swift: ${{runner.os == 'macOS'}}
+          node-version: "22" # Node 24 requires C++20 but tree-sitter specifies C++17
         env:
           npm_config_legacy_peer_deps: true
 
