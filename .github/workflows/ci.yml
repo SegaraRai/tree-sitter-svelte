@@ -2,20 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [master]
-    paths:
-      - grammar.js
-      - src/**
-      - test/**
-      - bindings/**
-      - binding.gyp
+    branches:
+      - master
   pull_request:
-    paths:
-      - grammar.js
-      - src/**
-      - test/**
-      - bindings/**
-      - binding.gyp
+    branches:
+      - "**"
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -41,6 +32,9 @@ jobs:
 
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
+
+      - name: Build parser
+        run: tree-sitter build --wasm
 
       - name: Clone Svelte repo
         uses: actions/checkout@v6
