@@ -34,7 +34,7 @@ jobs:
         uses: tree-sitter/setup-action/cli@v2
 
       - name: Build parser
-        run: tree-sitter build --wasm
+        run: tree-sitter build --wasm --abi=14
 
       - name: Clone Svelte repo
         uses: actions/checkout@v6
