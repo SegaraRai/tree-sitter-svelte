@@ -4,10 +4,12 @@ fn main() {
     let mut c_config = cc::Build::new();
     c_config.std("c11").include(src_dir);
 
-    #[cfg(target_env = "msvc")]
-    c_config.flag("-utf-8");
 
-    if std::env::var("TARGET").unwrap() == "wasm32-unknown-unknown" {
+    let target = std::env::var("TARGET").unwrap();
+    if target.contains("windows-msvc") {
+        c_config.flag("/utf-8");
+    }
+    if target == "wasm32-unknown-unknown" {
         let Ok(wasm_headers) = std::env::var("DEP_TREE_SITTER_LANGUAGE_WASM_HEADERS") else {
             panic!("Environment variable DEP_TREE_SITTER_LANGUAGE_WASM_HEADERS must be set");
         };
