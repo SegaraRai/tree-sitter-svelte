@@ -30,7 +30,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          submodules: true
+          submodules: false
+
+      - name: Checkout Svelte examples
+        run: git -c submodule.examples/svelte.update=checkout submodule update --init --depth 1 examples/svelte
 
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
