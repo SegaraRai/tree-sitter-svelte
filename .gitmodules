@@ -1,3 +1,4 @@
 [submodule "examples/svelte"]
 	path = examples/svelte
 	url = https://github.com/sveltejs/svelte.git
+	update = none
