@@ -2,8 +2,6 @@
 
 #include <string.h>
 
-#include "wasm_extra.h"
-
 typedef enum {
     AREA,
     BASE,

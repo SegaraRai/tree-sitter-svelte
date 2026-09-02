@@ -3,8 +3,6 @@
 
 #include <wctype.h>
 
-#include "wasm_extra.h"
-
 enum TokenType {
     START_TAG_NAME,
     SCRIPT_START_TAG_NAME,

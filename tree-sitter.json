@@ -6,7 +6,9 @@
       "camelcase": "Svelte",
       "title": "Svelte",
       "scope": "source.svelte",
-      "file-types": ["svelte"],
+      "file-types": [
+        "svelte"
+      ],
       "injection-regex": "^svelte$",
       "class-name": "TreeSitterSvelte"
     }
